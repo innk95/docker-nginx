@@ -1,0 +1,47 @@
+version: '2'
+services:
+  db:
+    image: postgres
+  backend:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./proj:/proj
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - migration
+  frontend:
+    image: webpack
+    build:
+      context: ./conf/frontend
+    ports:
+      - "8080:8080"
+      - '885:885'
+      - '3001:3001'
+    volumes:
+      - ./frontend:/frontend
+    depends_on:
+      - backend
+  migration:
+    build: .
+    command: python manage.py migrate
+    volumes:
+      - ./proj:/proj
+    depends_on:
+      - db
+  nginx:
+# при падении будет стараться подняться
+      restart: always
+# только свежий nginx
+      image: nginx:latest
+      expose:
+        - 8080
+      ports:
+        - "80:8080"
+      volumes:
+          - ./conf/nginx:/etc/nginx/conf.d
+      depends_on:
+          - frontend
+
